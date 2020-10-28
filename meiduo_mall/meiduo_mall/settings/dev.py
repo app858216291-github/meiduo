@@ -16,6 +16,8 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+import sys
+sys.path.insert(0,os.path.join(BASE_DIR, 'apps'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/2.2/howto/deployment/checklist/
 
@@ -25,7 +27,8 @@ SECRET_KEY = '+chz#()d+38f-!7b#y!a^oev=0*2iy8!#*t21eanp7^&pqr)rp'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+AUTH_USER_MODEL = 'users.User'
 
 
 # Application definition
@@ -37,9 +40,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders',
+    'users.apps.UsersConfig',
+    'verifications.apps.VerificationsConfig',
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -79,7 +86,7 @@ DATABASES = {
         # 注意：
         # 此处的 192.168.19.131 替换为自己数据库服务主机的IP
         # 如果自己数据库服务主机IP不行，设置为 127.0.0.1 再尝试
-        'HOST': '127.0.0.1',
+        'HOST': '192.168.19.131',
         'PORT': 3306,
         'USER': 'song',
         'PASSWORD': 'mysql',
@@ -129,22 +136,33 @@ CACHES = {
     "default": {
         # 默认缓存数据存储信息：存到 0 号库
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/0",
+        "LOCATION": "redis://192.168.19.131:6379/0",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
-}
-CACHES = {
     "session": {
         # 默认缓存数据存储信息：存到 0 号库
         "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379/1",
+        "LOCATION": "redis://192.168.19.131:6379/1",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
         }
     },
+    "verify_code": {
+        # 验证码信息: 存到 2 号库
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://192.168.19.131:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # 从redis中查询出数据之后，会自动将bytes数据解码为str
+            "CONNECTION_POOL_KWARGS": {
+                'decode_responses': True
+            }
+        }
+    },
 }
+# 设置session数据存储到CACHES缓存中
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 # 设置session数据存储到CACHES缓存的session配置中
 SESSION_CACHE_ALIAS = "session"
@@ -189,3 +207,9 @@ LOGGING = {
         },
     }
 }
+# CORS跨域请求白名单设置
+CORS_ORIGIN_WHITELIST = (
+    # 将异步跨域请求中，Origin请求头携带的源请求地址添加到此处的白名单中
+    'http://www.meiduo.site:8080',
+)
+CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
