@@ -88,10 +88,10 @@ DATABASES = {
         # 如果自己数据库服务主机IP不行，设置为 127.0.0.1 再尝试
         'HOST': '192.168.19.131',
         'PORT': 3306,
-        'USER': 'song',
+        'USER': 'root',
         'PASSWORD': 'mysql',
         'NAME': 'meiduo'
-    }
+    },
 }
 
 
@@ -142,7 +142,7 @@ CACHES = {
         }
     },
     "session": {
-        # 默认缓存数据存储信息：存到 0 号库
+        # 默认缓存数据存储信息：存到 1 号库
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://192.168.19.131:6379/1",
         "OPTIONS": {
