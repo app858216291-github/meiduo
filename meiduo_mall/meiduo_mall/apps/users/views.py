@@ -8,6 +8,7 @@ from django_redis import get_redis_connection
 from django.middleware.csrf import get_token
 from users.models import User
 from django.http import JsonResponse, response
+from meiduo_mall.utils.mixins import LoginRequiredMixin
 
 
 class UsernameCountView(View):
@@ -35,7 +36,6 @@ class MobileCountView(View):
         return JsonResponse({'code': 0,
                              'message': 'OK',
                              'count': count})
-
 
 class RegisterView(View):
 
@@ -109,7 +109,6 @@ class RegisterView(View):
 
         return response
 
-
 class CSRFTokenView(View):
     """csrf跨站请求限制"""
     def get(self, request):
@@ -177,3 +176,82 @@ class LogoutView(View):
 
         # 返回响应
         return response
+
+class UserInfoView(LoginRequiredMixin,View):
+    def get(self, request):
+        """获取登录用户个人信息"""
+        # 获取登录用户对象
+        user = request.user
+        # 返回响应数据
+        info = {
+            'username': user.username,
+            'mobile': user.mobile,
+            'email': user.email,
+            'email_active':user.email_active
+        }
+
+        return JsonResponse({'code': 0,
+                             'message': 'OK',
+                             'user': info})
+
+class UserEmailView(LoginRequiredMixin, View):
+    def put(self, request):
+        """设置用户的个人邮箱"""
+        # 获取参数并进行校验
+        req_data = json.loads(request.body.decode())
+
+        email = req_data.get('email')
+
+
+        if not email:
+            return JsonResponse({'code': 400,
+                                 'message': '缺少email参数'})
+        if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+            return JsonResponse({'code': 400,
+                                 'message': '邮箱参数有误'})
+        # 保存用户的个人邮箱设置
+        user = request.user
+        try:
+            user.email = email
+            user.save()
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '邮箱设置失败'})
+
+        # Celery异步发送邮箱验证邮件
+        from celery_tasks.email.tasks import send_verify_email
+        verify_url = user.generate_verify_email_url()
+        # 发送邮件发送的任务消息
+        send_verify_email.delay(email, verify_url)
+
+
+        # 返回响应
+        return JsonResponse({'code': 0,
+                             'message': 'OK'})
+
+class EmailVerifyView(View):
+    def put(self, request):
+        """用户邮箱验证"""
+        # 获取加密的用户token并进行校验
+        token = request.GET.get('token')
+
+        if not token:
+            return JsonResponse({'code': 400,
+                                 'message': '缺少token参数'})
+        #对用户的信息进行解密
+        user = User.check_verify_email_token(token)
+
+        if user is None:
+            return JsonResponse({'code': 400,
+                                 'message': 'token信息有误'})
+
+        # 设置对应用户的邮箱验证标记为已验证
+        try:
+            user.email_active = True
+            user.save()
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '验证邮箱失败'})
+        # 返回响应
+        return JsonResponse({'code': 0,
+                             'message': 'OK'})
