@@ -5,6 +5,6 @@ var vm = new Vue({
     },
     mounted(){
         // 从 cookie 中获取保存的 username 用户
-        // this.username = Cookies.get('username');
+        this.username = Cookies.get('username');
     }
 });
