@@ -9,7 +9,7 @@ from django.middleware.csrf import get_token
 from users.models import User
 from django.http import JsonResponse, response
 from meiduo_mall.utils.mixins import LoginRequiredMixin
-
+from users.models import Address
 
 class UsernameCountView(View):
     def get(self, request, username):
@@ -255,3 +255,74 @@ class EmailVerifyView(View):
         # 返回响应
         return JsonResponse({'code': 0,
                              'message': 'OK'})
+
+# POST /addresses/
+class AddressView(LoginRequiredMixin,View):
+    def post(self, request):
+        """新增用户收货地址"""
+        #判断当前用户的收货地址是否超过上限
+        try:
+            count = Address.objects.filter(user=request.user, is_delete=False).count()
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message':'获取地址数据出错'})
+        if count >= 20:
+            return JsonResponse({'code': 400,
+                                 'message': '收货地址超过上限'})
+
+        # 接收数据并进行数据校验
+        req_data = json.loads(request.body.decode())
+        title = req_data.get('title')
+        receiver = req_data.get('receiver')
+        province_id = req_data.get('province_id')
+        city_id = req_data.get('city_id')
+        district_id = req_data.get('district_id')
+        place = req_data.get('place')
+        mobile = req_data.get('mobile')
+        phone = req_data.get('phone')
+        email = req_data.get('email')
+
+        if not all([title, receiver, province_id, city_id, district_id, place, mobile]):
+            return JsonResponse({'code': 400,
+                                 'message': '缺少必传参数'})
+
+        if not re.match(r'^1[3-9]\d{9}$', mobile):
+            return JsonResponse({'code': 400,
+                                 'message': '参数mobile有误'})
+
+        if phone:
+            if not re.match(r'^(0[0-9]{2,3}-)?([2-9][0-9]{6,7})+(-[0-9]{1,4})?$', phone):
+                return JsonResponse({'code': 400,
+                                     'message': '参数phone有误'})
+        if email:
+            if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+                return JsonResponse({'code': 400,
+                                     'message': '参数email有误'})
+        # 保存收货地址数据
+        try:
+            address = Address.objects.create(user=request.user, **req_data)
+
+            # 设置默认收货地址
+            if not request.user.default_address:
+                request.user.default_address = address
+                request.user.save()
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '新增地址保存失败'})
+        # 返回响应
+        address_data = {
+            'id': address.id,
+            'title': address.title,
+            'receiver': address.receiver,
+            'province': address.province.name,
+            'city': address.city.name,
+            'district': address.district.name,
+            'place': address.place,
+            'mobile': address.mobile,
+            'phone': address.phone,
+            'email': address.email
+        }
+
+        return JsonResponse({'code':0,
+                             'message': 'OK',
+                             'address': address_data})

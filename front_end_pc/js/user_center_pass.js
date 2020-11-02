@@ -71,17 +71,17 @@ var vm = new Vue({
                     'X-CSRFToken': Cookies.get('csrftoken')
                 }
             })
-                .then(response => {
-                    if (response.data.code == 0) {
-                        location.href = 'login.html'
-                    } else if (response.data.status == 400) {
-                        // TODO:如果有问题, 需要报错/ 没写的:
-                        alert(response.data.message);
-                    }
-                })
-                .catch(error => {
-                    console.log(error.response.data);
-                })
+            .then(response => {
+                if (response.data.code == 0) {
+                    alert('密码修改成功!');
+                    location.href = 'login.html'
+                } else {
+                    alert(response.data.message);
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            })
         }
         ,
         // 检查当前密码是否正确

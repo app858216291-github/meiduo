@@ -6,9 +6,9 @@ var vm = new Vue({
         success: true
     },
     mounted: function(){
-        this.verify_email();
         // 向API服务请求获取csrftoken的值并存入cookie
         this.get_csrf_token();
+        this.verify_email();
     },
     methods: {
         // 获取csrf_token的值

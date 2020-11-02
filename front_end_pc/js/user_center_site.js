@@ -50,15 +50,15 @@ var vm = new Vue({
                     responseType: 'json',
                     withCredentials:true,
                 })
-                    .then(response => {
-                        this.cities = response.data.subs;
-                        this.districts = [];
-                    })
-                    .catch(error => {
-                        console.log(error);
-                        this.cities = [];
-                        this.districts = [];
-                    });
+                .then(response => {
+                    this.cities = response.data.subs;
+                    this.districts = [];
+                })
+                .catch(error => {
+                    console.log(error);
+                    this.cities = [];
+                    this.districts = [];
+                });
             }
         },
         'form_address.city_id': function () {
@@ -67,13 +67,13 @@ var vm = new Vue({
                     responseType: 'json',
                     withCredentials:true,
                 })
-                    .then(response => {
-                        this.districts = response.data.subs;
-                    })
-                    .catch(error => {
-                        console.log(error);
-                        this.districts = [];
-                    });
+                .then(response => {
+                    this.districts = response.data.subs;
+                })
+                .catch(error => {
+                    console.log(error);
+                    this.districts = [];
+                });
             }
         }
     },
@@ -111,16 +111,16 @@ var vm = new Vue({
                 responseType: 'json',
                 withCredentials:true,
             })
-                .then(response => {
-                    if (response.data.code == 0) {
-                        this.provinces = response.data.provinces;
-                    } else {
-                        alert(response.data.message);
-                    }
-                })
-                .catch(error => {
-                    alert(error);
-                });
+            .then(response => {
+                if (response.data.code == 0) {
+                    this.provinces = response.data.provinces;
+                } else {
+                    alert(response.data.message);
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            });
         },
         clear_all_errors: function () {
             this.error_receiver = false;
@@ -148,6 +148,9 @@ var vm = new Vue({
             this.editing_address_index = index + 1;
             // 只获取数据，防止修改form_address影响到addresses数据
             this.form_address = JSON.parse(JSON.stringify(this.addresses[index]));
+            delete this.form_address.province;
+            delete this.form_address.city;
+            delete this.form_address.district;
             this.is_show_edit = true;
         },
         check_receiver: function () {
@@ -198,17 +201,20 @@ var vm = new Vue({
                             'X-CSRFToken': Cookies.get('csrftoken')
                         }
                     })
-                        .then(response => {
+                    .then(response => {
+                        if (response.data.code == 0) {
                             // 将新地址添加大数组头部
                             this.addresses = response.data.address;
                             this.is_show_edit = false;
                             location.href = 'user_center_site.html'
-                        })
-                        .catch(error => {
-                            console.log(error);
-                        })
+                        } else {
+                            alert(response.data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    })
                 } else {
-
                     // 修改地址
                     var url = this.host + '/addresses/' + this.addresses[this.editing_address_index - 1].id + '/'
                     axios.put(url, this.form_address, {
@@ -218,13 +224,17 @@ var vm = new Vue({
                             'X-CSRFToken': Cookies.get('csrftoken')
                         }
                     })
-                        .then(response => {
+                    .then(response => {
+                        if (response.data.code == 0) {
                             this.addresses[this.editing_address_index - 1] = response.data.address;
                             this.is_show_edit = false;
-                        })
-                        .catch(error => {
-                            alert(error.response.data.detail || error.response.data.message);
-                        })
+                        } else {
+                            alert(response.data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.log(error);
+                    })
                 }
             }
         },
@@ -237,17 +247,18 @@ var vm = new Vue({
                     'X-CSRFToken': Cookies.get('csrftoken')
                 }
             })
-                .then(response => {
-                    // // 从数组中移除地址
-                    // this.addresses.splice(index, 1);
-                    if (response.data.code == 0) {
-                        location.href = 'http://www.meiduo.site:8080/user_center_site.html'
-                    }
-
-                })
-                .catch(error => {
-                    console.log(error.response.data);
-                })
+            .then(response => {
+                // // 从数组中移除地址
+                // this.addresses.splice(index, 1);
+                if (response.data.code == 0) {
+                    location.href = 'http://www.meiduo.site:8080/user_center_site.html'
+                } else {
+                    alert(response.data.message);
+                }
+            })
+            .catch(error => {
+                console.log(error);
+            })
         },
         // 获取地址数据:
         get_address: function () {
@@ -255,19 +266,18 @@ var vm = new Vue({
                 responseType: 'json',
                 withCredentials:true
             })
-                .then(response => {
+            .then(response => {
+                if (response.data.code == 0) {
                     this.addresses = response.data.addresses;
                     // this.limit = response.data.limit;
                     this.default_address_id = response.data.default_address_id;
-                })
-                .catch(error => {
-                    status = error.response.status;
-                    if (status == 401 || status == 403) {
-                        location.href = 'login.html?next=/user_center_site.html';
-                    } else {
-                        // alert(error.response.data.detail);
-                    }
-                })
+                } else {
+                    alert(response.data.message);
+                }
+            })
+            .catch(error => {
+               console.log(error);
+            })
         },
         // 设置默认地址
         set_default: function (index) {
@@ -283,6 +293,8 @@ var vm = new Vue({
                 // this.default_address_id = this.addresses[index].id;
                 if (response.data.code == 0) {
                     location.href = 'http://www.meiduo.site:8080/user_center_site.html';
+                } else {
+                    alert(response.data.message);
                 }
             })
             .catch(error => {
@@ -311,13 +323,17 @@ var vm = new Vue({
                         'X-CSRFToken': Cookies.get('csrftoken')
                     }
                 })
-                    .then(response => {
+                .then(response => {
+                    if (response.data.code == 0) {
                         this.addresses[index].title = this.input_title;
                         this.is_set_title = [];
-                    })
-                    .catch(error => {
-                        console.log(error.response.data);
-                    })
+                    } else {
+                        alert(response.data.message);
+                    }
+                })
+                .catch(error => {
+                    console.log(error);
+                })
             }
         },
         // 取消保存地址
