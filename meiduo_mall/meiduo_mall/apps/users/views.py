@@ -6,6 +6,8 @@ import re
 from django.views import View
 from django_redis import get_redis_connection
 from django.middleware.csrf import get_token
+
+from areas.models import Area
 from users.models import User
 from django.http import JsonResponse, response
 from meiduo_mall.utils.mixins import LoginRequiredMixin
@@ -177,7 +179,7 @@ class LogoutView(View):
         # 返回响应
         return response
 
-class UserInfoView(LoginRequiredMixin,View):
+class UserInfoView(LoginRequiredMixin, View):
     def get(self, request):
         """获取登录用户个人信息"""
         # 获取登录用户对象
@@ -257,7 +259,7 @@ class EmailVerifyView(View):
                              'message': 'OK'})
 
 # POST /addresses/
-class AddressView(LoginRequiredMixin,View):
+class AddressView(LoginRequiredMixin, View):
     def post(self, request):
         """新增用户收货地址"""
         #判断当前用户的收货地址是否超过上限
@@ -326,3 +328,182 @@ class AddressView(LoginRequiredMixin,View):
         return JsonResponse({'code':0,
                              'message': 'OK',
                              'address': address_data})
+    def get(self, request):
+        """用户收货地址获取"""
+        address_li = []
+        try:
+            addresses = Address.objects.filter(user=request.user,is_delete=False)
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '操作数据库失败'})
+        # 遍历对象拿出数据,转换成字典,添加到地址列表
+        for address in addresses:
+            address_dict = {
+                'id': address.id,
+                'title': address.title,
+                'receiver': address.receiver,
+                'province': address.province,
+                'city': address.city,
+                'district': address.district,
+                'place': address.place,
+                'mobile': address.mobile,
+                'phone': address.email
+            }
+            address_li.append(address_dict)
+
+        # 返回响应数据
+        return JsonResponse({'code': 0,
+                             'message': 'OK',
+                             'default_address_id': request.user.default_address_id,
+                             'addresses': address_li})
+
+# PUT/DELETE  /addresses/(?P<address_id>\d+)/
+class AddressChangeView(LoginRequiredMixin, View):
+    def put(self,request,address_id):
+        """修改用户收货地址"""
+        try:
+            req_data = json.loads(request.body)
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '请求参数错误'})
+
+        #传入修改的数据
+        receiver = req_data.get('receiver')
+        province_id = req_data.get('province_id')
+        city_id = req_data.get('city_id')
+        district_id = req_data.get('district_id')
+        place = req_data.get('place')
+        mobile = req_data.get('mobile')
+        phone = req_data.get('phone')
+        email = req_data.get('email')
+
+        #数据的校验
+        if not all([receiver,province_id,city_id,district_id,place,mobile]):
+            return JsonResponse({'code': 400,
+                                 'message': '缺少必传参数'})
+        try:
+            Area.objects.get(id=province_id)
+            Area.objects.get(id=city_id)
+            Area.objects.get(id=district_id)
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '地址参数有误'})
+        if not re.match(r'^1[3-9]\d{9}$', mobile):
+            return JsonResponse({'code': 400,
+                                 'message': '手机号格式有误'})
+        if phone:
+            if not re.match(r'^(0[0-9]{2,3}-)?([2-9][0-9]{6,7})+(-[0-9]{1,4})?$', phone):
+                return JsonResponse({'code': 400,
+                                     'message': '固定电话格式有误'})
+        if email:
+            if not re.match(r'^[a-z0-9][\w\.\-]*@[a-z0-9\-]+(\.[a-z]{2,5}){1,2}$', email):
+                return JsonResponse({'code': 400,
+                                     'message': '邮箱格式有误'})
+        #对数据库进行修改
+        try:
+            Address.objects.filter(id=address_id).update(receiver=receiver,
+                                                         province_id=province_id,
+                                                         city_id=city_id,
+                                                         district_id=district_id,
+                                                         place=place,
+                                                         mobile=mobile,
+                                                         phone=phone,
+                                                         email=email)
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '地址更新失败'})
+        #对修改后的地址数据进行展示
+        try:
+            address = Address.objects.get(id=address_id)
+            address_data = {
+                'id': address_id,
+                'title': address.title,
+                'receiver': address.receiver,
+                'province': address.province.name,
+                'city': address.city.name,
+                'district': address.district.name,
+                'place': address.place,
+                'mobile': address.mobile,
+                'phone': address.phone,
+                'email': address.email
+            }
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '数据库操作失败'})
+        # 返回响应数据
+        return JsonResponse({'code': 0,
+                             'message': 'OK',
+                             'address': address_data})
+    def delete(self, request,address_id):
+        """删除用户收货地址"""
+        try:
+            Address.objects.filter(id=address_id).update(is_delete=True)
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '删除失败'})
+        else:
+            return JsonResponse({'code': 0,
+                                 'message': 'OK'})
+
+# PUT /addresses/(?P<address_id>\d+)/default/
+class DefaultAddressView(LoginRequiredMixin, View):
+    def put(self,request,address_id):
+        """修改默认收货地址"""
+        user = request.user
+        try:
+            user.default_address_id = address_id
+            user.save()
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '修改默认地址失败'})
+        return JsonResponse({'code': 0,
+                             'message': 'OK'})
+
+
+class TitleChangeView(LoginRequiredMixin, View):
+    def put(self,request, address_id):
+        """修改地址标题"""
+        req_data = json.loads(request.body)
+        title = req_data.get('title')
+        if not title:
+            return JsonResponse({'code': 400,
+                                 'message': '缺少标题参数'})
+        try:
+            Address.objects.filter(id=address_id).update(title=title)
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '修改标题失败'})
+        return JsonResponse({'code': 0,
+                             'message': 'OK'})
+
+class ChangePwdView(LoginRequiredMixin, View):
+    def put(self, request):
+        """修改用户密码"""
+        req_data = json.loads(request.body)
+        old_password = req_data.get('old_password')
+        new_password = req_data.get('new_password')
+        new_password2 = req_data.get('new_password2')
+
+        user = request.user
+        username = user.username
+        if not all([old_password, new_password, new_password2]):
+            return JsonResponse({'code': 400,
+                                 'message': '缺少必传参数'})
+
+        if not user.check_password(old_password):
+            return JsonResponse({'code': 400,
+                                 'message': '密码输入错误'})
+        if not re.match(r'^[a-zA-Z0-9]{8,20}$', new_password):
+            return JsonResponse({'code': 400,
+                                 'massage': '新密码格式有误'})
+        if new_password != new_password2:
+            return JsonResponse({'code': 400,
+                                 'massage': '两次密码不一致'})
+        try:
+            user.set_password(new_password)
+            user.save()
+        except Exception as e:
+            return JsonResponse({'code': 400,
+                                 'message': '设置密码失败'})
+        return JsonResponse({'code': 0,
+                             'message': 'OK'})
