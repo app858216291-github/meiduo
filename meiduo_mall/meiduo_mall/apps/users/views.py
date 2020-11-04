@@ -178,7 +178,7 @@ class LogoutView(View):
         # 请求登录用户的session的信息
         logout(request)
         # 删除cookie中的username
-        request = JsonResponse({'code': 0,
+        response = JsonResponse({'code': 0,
                                 'message':'OK'})
         response.delete_cookie('username')
 

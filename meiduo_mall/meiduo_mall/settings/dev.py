@@ -15,6 +15,11 @@ import os
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# 生成的静态 html 文件保存目录
+# BASE_DIR：内层 meiduo_mall 的绝对路径
+# GENERATED_STATIC_HTML_FILES_DIR：项目目录，即 meiduo 目录的绝对路径
+GENERATED_STATIC_HTML_FILES_DIR = os.path.join(os.path.dirname(os.path.dirname(BASE_DIR)), 'front_end_pc')
+
 
 import sys
 sys.path.insert(0,os.path.join(BASE_DIR, 'apps'))
@@ -40,6 +45,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_crontab'  
     'corsheaders',
     'users.apps.UsersConfig',
     'verifications.apps.VerificationsConfig',
@@ -244,3 +250,16 @@ EMAIL_FROM = '美多商城<15891090917@163.com>'
 
 # 邮箱验证链接：该配置项名字是自己指定的，不固定
 EMAIL_VERIFY_URL = 'http://www.meiduo.site:8080/success_verify_email.html?token='
+
+
+# 定时任务配置
+CRONJOBS = [
+    (
+        # 定时任务的间隔，此处指每隔 1 分钟定时执行
+        '*/1 * * * *',
+        # 具体定时执行的任务，此处是执行 generate_static_index_html 函数，重新生成首页静态文件
+        'contents.generate_index.generate_static_index_html',
+        # 定时执行任务过程中输出的日志内容存储路径
+        '>> ' + os.path.join(BASE_DIR, 'logs/crontab.log')
+    ),
+]
