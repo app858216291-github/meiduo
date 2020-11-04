@@ -19,7 +19,7 @@ class ProvinceAreasView(View):
             #缓存中没有数据
             # 查询数据库获取所有省级地区的数据
             try:
-                provinces = Area.object.filter(parent=None).values('id', 'name')
+                provinces = Area.objects.filter(parent=None).values('id', 'name')
                 #将 QuerySet 数据转成 list
                 provinces = list(provinces)
 

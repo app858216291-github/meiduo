@@ -13,7 +13,7 @@ import logging
 
 logger = logging.getLogger('django')
 
-
+# GET /image_codes/(?P<uuid>[\w-]+)/
 class ImageCodeView(View):
     """获取图片验证码数据"""
     def get(self, request, uuid):
@@ -26,7 +26,7 @@ class ImageCodeView(View):
         #3,将验证码进行返回
         return HttpResponse(image, content_type='image/jpg')
 
-
+ # GET /sms_codes/(?P<mobile>1[3-9]\d{9})/
 class SMSCodeView(View):
     """获取短信验证码"""
     def get(self,request,mobile):

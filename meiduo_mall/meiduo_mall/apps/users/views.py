@@ -13,6 +13,7 @@ from django.http import JsonResponse, response
 from meiduo_mall.utils.mixins import LoginRequiredMixin
 from users.models import Address
 
+# GET /usernames/(?P<username>[a-zA-Z0-9_-]{5,20})/count/
 class UsernameCountView(View):
     def get(self, request, username):
         """判断注册用户名是否重复"""
@@ -26,6 +27,7 @@ class UsernameCountView(View):
                              'message': 'OK',
                              'count': count})
 
+# GET /mobiles/(?P<mobile>1[3-9]\d{9})/count/
 class MobileCountView(View):
     def get(self, request, mobile):
         """判断注册手机号是否重复"""
@@ -39,6 +41,7 @@ class MobileCountView(View):
                              'message': 'OK',
                              'count': count})
 
+# POST /register/
 class RegisterView(View):
 
     def post(self, request):
@@ -111,6 +114,7 @@ class RegisterView(View):
 
         return response
 
+# GET /csrf_token/
 class CSRFTokenView(View):
     """csrf跨站请求限制"""
     def get(self, request):
@@ -122,6 +126,7 @@ class CSRFTokenView(View):
                              'message': 'OK',
                              'csrf_token': csrf_token})
 
+# POST /login/
 class LoginView(View):
     def post(self, request):
         """用户登录"""
@@ -166,6 +171,7 @@ class LoginView(View):
 
         return response
 
+# DELETE /logout/
 class LogoutView(View):
     def delete(self, request):
         """退出登录"""
@@ -179,6 +185,7 @@ class LogoutView(View):
         # 返回响应
         return response
 
+# GET /user/
 class UserInfoView(LoginRequiredMixin, View):
     def get(self, request):
         """获取登录用户个人信息"""
@@ -196,6 +203,7 @@ class UserInfoView(LoginRequiredMixin, View):
                              'message': 'OK',
                              'user': info})
 
+# PUT /user/email/
 class UserEmailView(LoginRequiredMixin, View):
     def put(self, request):
         """设置用户的个人邮箱"""
@@ -231,6 +239,7 @@ class UserEmailView(LoginRequiredMixin, View):
         return JsonResponse({'code': 0,
                              'message': 'OK'})
 
+# PUT /emails/verification/
 class EmailVerifyView(View):
     def put(self, request):
         """用户邮箱验证"""
@@ -342,9 +351,9 @@ class AddressView(LoginRequiredMixin, View):
                 'id': address.id,
                 'title': address.title,
                 'receiver': address.receiver,
-                'province': address.province,
-                'city': address.city,
-                'district': address.district,
+                'province': address.province.name,
+                'city': address.city.name,
+                'district': address.district.name,
                 'place': address.place,
                 'mobile': address.mobile,
                 'phone': address.email
@@ -459,7 +468,7 @@ class DefaultAddressView(LoginRequiredMixin, View):
         return JsonResponse({'code': 0,
                              'message': 'OK'})
 
-
+ # PUT /addresses/(?P<address_id>\d+)/title/
 class TitleChangeView(LoginRequiredMixin, View):
     def put(self,request, address_id):
         """修改地址标题"""
@@ -476,6 +485,7 @@ class TitleChangeView(LoginRequiredMixin, View):
         return JsonResponse({'code': 0,
                              'message': 'OK'})
 
+# PUT /password/
 class ChangePwdView(LoginRequiredMixin, View):
     def put(self, request):
         """修改用户密码"""
