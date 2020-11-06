@@ -20,4 +20,5 @@ celery_app.config_from_object('celery_tasks.config')
 
 # ③ celery worker启动时自动加载任务
 celery_app.autodiscover_tasks(['celery_tasks.sms',
-                               'celery_tasks.email'])
+                               'celery_tasks.email',
+                               'celery_tasks.html'])

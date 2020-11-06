@@ -3,7 +3,7 @@ from django.views import View
 from django.http import JsonResponse
 from goods.models import GoodsCategory, SKU
 from goods.utils import get_breadcrumb
-
+from haystack.views import  SearchView
 # GET /list/(?P<category_id>\d+)/skus/
 class SKUListView(View):
     def get(self, request, category_id):
@@ -60,3 +60,47 @@ class SKUListView(View):
                              'breadcrumb': breadcrumb,
                              'list': sku_li,
                              'count': paginator.num_pages})
+
+
+# GET /search/?q=<关键字>&page=<页码>&page_size=<页容量>
+class SKUSearchView(View):
+    def get(self, request):
+        """SKU商品数据搜索"""
+        # 获取参数并进行校验
+        keyword = request.GET.get('q')
+        page = request.GET.get('page', 1)
+        page_size = request.GET.get('page_size', 6)
+
+        if not keyword:
+            return JsonResponse({'code': 400,
+                                 'message': '缺少搜索关键字'})
+        # 使用haytack检索数据
+        from haystack.query import SearchQuerySet
+        query = SearchQuerySet()
+        search_res = query.auto_query(keyword).load_all()
+
+        # 对结果数据进行分页
+        # 对查询数据进行分页
+        from django.core.paginator import Paginator
+        paginator = Paginator(search_res,page_size)
+        results = paginator.get_page(page)
+
+        # 组织响应数据并返回
+        sku_li = []
+        nginx_url = 'http://192.168.19.131:8888/'
+
+        for res in results:
+            sku = res.object
+            sku_li.append({
+                'id': sku.id,
+                'name': sku.name,
+                'price': sku.price,
+                'default_image_url': nginx_url + sku.default_image.name,
+                'comments': sku.comments
+            })
+        return JsonResponse({'code': 0,
+                             'message': 'OK',
+                             'count': paginator.count,
+                             'page_size': paginator.per_page,
+                             'query': keyword,
+                             'skus': sku_li})

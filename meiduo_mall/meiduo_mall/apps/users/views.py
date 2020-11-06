@@ -410,14 +410,14 @@ class AddressChangeView(LoginRequiredMixin, View):
                                      'message': '邮箱格式有误'})
         #对数据库进行修改
         try:
-            Address.objects.filter(id=address_id).update(receiver=receiver,
-                                                         province_id=province_id,
-                                                         city_id=city_id,
-                                                         district_id=district_id,
-                                                         place=place,
-                                                         mobile=mobile,
-                                                         phone=phone,
-                                                         email=email)
+            Address.objects.filter(id=address_id,user=request.user,is_delete=False).update(receiver=receiver,
+                                                                                           province_id=province_id,
+                                                                                           city_id=city_id,
+                                                                                           district_id=district_id,
+                                                                                           place=place,
+                                                                                           mobile=mobile,
+                                                                                           phone=phone,
+                                                                                           email=email)
         except Exception as e:
             return JsonResponse({'code': 400,
                                  'message': '地址更新失败'})
@@ -446,7 +446,10 @@ class AddressChangeView(LoginRequiredMixin, View):
     def delete(self, request,address_id):
         """删除用户收货地址"""
         try:
-            Address.objects.filter(id=address_id).update(is_delete=True)
+            Address.objects.filter(id=address_id,user=request.user,is_delete=False).update(is_delete=True)
+            if request.user.default_address_id == address_id:
+                request.user.default_address_id = None
+                request.user.seva()
         except Exception as e:
             return JsonResponse({'code': 400,
                                  'message': '删除失败'})
