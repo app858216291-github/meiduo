@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     'areas.apps.AreasConfig',
     'goods.apps.GoodsConfig',
     'contents.apps.ContentsConfig',
+    'carts.apps.CartsConfig',
+    'orders.apps.OrdersConfig',
 ]
 
 MIDDLEWARE = [
@@ -164,6 +166,18 @@ CACHES = {
         # 验证码信息: 存到 2 号库
         "BACKEND": "django_redis.cache.RedisCache",
         "LOCATION": "redis://192.168.19.131:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+            # 从redis中查询出数据之后，会自动将bytes数据解码为str
+            "CONNECTION_POOL_KWARGS": {
+                'decode_responses': True
+            }
+        }
+    },
+    "cart": {
+        # 购物车数据: 存到 4 号库
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://192.168.19.131:6379/4",
         "OPTIONS": {
             "CLIENT_CLASS": "django_redis.client.DefaultClient",
             # 从redis中查询出数据之后，会自动将bytes数据解码为str

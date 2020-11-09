@@ -61,9 +61,9 @@
         <li class="col05">[[ sku.price ]]元</li>
         <li class="col06">
             <div class="num_add">
-                <a @click="on_add(index)" class="add fl">+</a>
+                <a @click="on_minus(index)" class="add fl">-</a>
                 <input v-model="sku.count" @focus="origin_input=sku.count" @blur="on_input(index)" type="text" class="num_show fl">
-                <a @click="on_minus(index)" class="minus fl">-</a>
+                <a @click="on_add(index)" class="minus fl">+</a>
             </div>
         </li>
         <li class="col07">[[sku.amount]]元</li>

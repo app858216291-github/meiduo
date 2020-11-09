@@ -5,6 +5,8 @@ from django.http import JsonResponse, request
 from django.views import  View
 # Create your views here.
 from django.contrib.auth import login
+
+from carts.utils import CartHelper
 from oauth.models import OAuthQQUser
 from oauth.utils import generate_secret_openid,check_secret_openid
 import json
@@ -81,12 +83,18 @@ class QQUserView(View):
             user = qq_user.user
             login(request, user)
 
-            reponse = JsonResponse({'code': 0,
+            response = JsonResponse({'code': 0,
                                     'message': 'OK'})
             # 设置cookie
-            reponse.set_cookie('username', user.username,
+            response.set_cookie('username', user.username,
                                max_age=3600 * 24 * 14)
-            return reponse
+
+            # 增加代码：合并购物车数据
+
+            cart_helper = CartHelper(request, response)
+            cart_helper.merge_cookie_cart_to_redis()
+            return response
+
 
     # POST /qq/oauth_callback/
     def post(self,request):
@@ -163,4 +171,8 @@ class QQUserView(View):
 
         # 设置 cookie 中保存 username
         response.set_cookie('username', user.username, 3600 * 24 * 14)
+
+        # 增加代码：合并购物车数据
+        cart_helper = CartHelper(request, response)
+        cart_helper.merge_cookie_cart_to_redis()
         return response

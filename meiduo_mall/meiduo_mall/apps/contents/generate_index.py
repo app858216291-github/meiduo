@@ -19,13 +19,13 @@ def generate_static_index_html():
         group_id = channel.group_id
 
         if group_id not in categories:
-            categories[group_id]={'channel': [],
+            categories[group_id]={'channels': [],
                                   'sub_cats': []}
         # 查询 channel 关联的 一级分类
         cat1 = channel.category
         categories[group_id]['channels'].append({'id': cat1.id,
                                                  'name': cat1.name,
-                                                 'url': channel})
+                                                 'url': channel.url})
         # 查询一级分类下面的二级分类
         cat2s = cat1.subs.all()
         for cat2 in cat2s:
@@ -47,7 +47,7 @@ def generate_static_index_html():
     # 将查到的数据传递给模版文件, 进行模版渲染
     context = {'categories': categories,
                'contents': contents,
-               'nginx_url': 'http://192.168.19.131:8888'}
+               'nginx_url': 'http://192.168.19.131:8888/'}
     # 加载模版
     template = loader.get_template('index.html')
     static_html = template.render(context=context)

@@ -8,6 +8,7 @@ from django_redis import get_redis_connection
 from django.middleware.csrf import get_token
 
 from areas.models import Area
+from carts.utils import CartHelper
 from users.models import User
 from django.http import JsonResponse, response
 from meiduo_mall.utils.mixins import LoginRequiredMixin
@@ -111,6 +112,9 @@ class RegisterView(View):
         response.set_cookie('username',
                             user.username,
                             max_age=3600 * 24 * 14)
+        # 增加代码：合并购物车数据
+        cart_helper = CartHelper(request, response)
+        cart_helper.merge_cookie_cart_to_redis()
 
         return response
 
@@ -168,6 +172,10 @@ class LoginView(View):
         response.set_cookie('username',
                             user.username,
                             max_age=3600 * 24 * 14)
+
+        # 增加代码：合并购物车数据
+        cart_helper = CartHelper(request, response)
+        cart_helper.merge_cookie_cart_to_redis()
 
         return response
 
