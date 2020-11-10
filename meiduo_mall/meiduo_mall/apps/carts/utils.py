@@ -241,4 +241,4 @@ class CartHelper:
             self.redis_conn.srem(self.cart_selected_key,*redis_cart_selected_remove)
 
         # 清除 cookie 数据
-        self.response.delete_cookie
+        self.response.delete_cookie('carts')
